@@ -71,8 +71,15 @@ p1 = create_human_player(color.azure, (-FIELD_HALF_X*0.6, PLAYER_H/2, 0))
 
 p2 = create_human_player(color.orange, (FIELD_HALF_X*0.6, PLAYER_H/2, 0))
 
+# Front-Spieler am Netz (näher am Netz, leicht höher für Blockstellung)
+p1_front = create_human_player(color.azure.tint(0.2), (-FIELD_HALF_X*0.15, PLAYER_H/2, 0))
+
+p2_front = create_human_player(color.orange.tint(0.2), (FIELD_HALF_X*0.15, PLAYER_H/2, 0))
+
 p1_vy = 0.0
 p2_vy = 0.0
+p1_front_vy = 0.0
+p2_front_vy = 0.0
 
 # ---------------------------
 # Ball
@@ -221,6 +228,19 @@ def reflect_from_player(player: Entity, extra_power: float):
     ball_vel.z += 0.5 * copysign(1, (player.x + player.z) or 1)
 
 
+def send_to_front_player(front_player: Entity):
+    """Schicke Ball zum Front-Spieler (Zuspiel zum Netzangriff)."""
+    global ball_vel
+    # Richtung vom hinteren Spieler zum Front-Spieler, dann schräg nach oben
+    target_dir = (front_player.world_position - ball.world_position)
+    target_dir.y = 3.5  # viel steiler nach oben für höheres Zuspiel
+    if target_dir.length() > 0:
+        target_dir = target_dir.normalized()
+    
+    speed = 13  # schneller Pass
+    ball_vel = target_dir * speed
+
+
 def update():
     global ball_vel, ball_hit_cooldown
 
@@ -278,17 +298,30 @@ def update():
 
     # Spieler-Kollision (mit kleinem Cooldown)
     ball_hit_cooldown = max(0.0, ball_hit_cooldown - dt)
-    def try_hit(player: Entity, hit_key_held: bool):
+    def try_hit(player: Entity, front_player: Entity, hit_key_held: bool):
         global ball_hit_cooldown
         if ball_hit_cooldown > 0:
             return
         if aabb_sphere_hit(player, ball, BALL_R):
-            extra = 4.0 if hit_key_held else 0.0
-            reflect_from_player(player, extra_power=extra)
+            # Hinterer Spieler trifft -> Ball zum Front-Spieler
+            send_to_front_player(front_player)
             ball_hit_cooldown = 0.12  # 120 ms Sperre
 
-    try_hit(p1, held_keys['space'])
-    try_hit(p2, held_keys['right shift'] or held_keys['shift'])
+    def try_hit_front(front_player: Entity, hit_key_held: bool):
+        global ball_hit_cooldown
+        if ball_hit_cooldown > 0:
+            return
+        if aabb_sphere_hit(front_player, ball, BALL_R):
+            # Front-Spieler trifft -> normaler Prall mit Extra-Power
+            extra = 6.0 if hit_key_held else 2.0
+            reflect_from_player(front_player, extra_power=extra)
+            ball_hit_cooldown = 0.12
+
+    try_hit(p1, p1_front, held_keys['space'])
+    try_hit(p2, p2_front, held_keys['right shift'] or held_keys['shift'])
+    # Front-Spieler können auch treffen (optional, ohne extra Keys)
+    try_hit_front(p1_front, False)
+    try_hit_front(p2_front, False)
 
 
 app.run()
