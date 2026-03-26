@@ -51,11 +51,25 @@ MOVE_SPEED = 8.5
 JUMP_FORCE = 10.5
 PLAYER_GRAV = -28
 
-p1 = Entity(model='cube', color=color.azure, scale=(PLAYER_W, PLAYER_H, PLAYER_D),
-            position=(-FIELD_HALF_X*0.6, PLAYER_H/2, 0), collider='box')
 
-p2 = Entity(model='cube', color=color.orange, scale=(PLAYER_W, PLAYER_H, PLAYER_D),
-            position=(FIELD_HALF_X*0.6, PLAYER_H/2, 0), collider='box')
+def create_human_player(player_color, position):
+    """Erstelle Spieler aus Kopf, Körper und Beinen."""
+    # Größere Hitbox für leicheres Treffen (2x breiter/tiefer)
+    player = Entity(position=position, collider='box', scale=(PLAYER_W*2.0, PLAYER_H*1.2, PLAYER_D*2.0))
+    # Körper (Torso)
+    Entity(parent=player, model='cube', color=player_color, scale=(0.7, 1.0, 0.5), y=0.3)
+    # Kopf
+    Entity(parent=player, model='sphere', color=player_color.tint(-0.1), scale=0.5, y=1.1)
+    # Linkes Bein
+    Entity(parent=player, model='cube', color=player_color, scale=(0.2, 0.8, 0.2), x=-0.2, y=-0.5)
+    # Rechtes Bein
+    Entity(parent=player, model='cube', color=player_color, scale=(0.2, 0.8, 0.2), x=0.2, y=-0.5)
+    return player
+
+
+p1 = create_human_player(color.azure, (-FIELD_HALF_X*0.6, PLAYER_H/2, 0))
+
+p2 = create_human_player(color.orange, (FIELD_HALF_X*0.6, PLAYER_H/2, 0))
 
 p1_vy = 0.0
 p2_vy = 0.0
