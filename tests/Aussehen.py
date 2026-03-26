@@ -134,8 +134,8 @@ def handle_player_movement():
     move_p1 = Vec3(0, 0, 0)
     if held_keys['a']: move_p1.x -= 1
     if held_keys['d']: move_p1.x += 1
-    if held_keys['w']: move_p1.z -= 1
-    if held_keys['s']: move_p1.z += 1
+    if held_keys['w']: move_p1.z += 1
+    if held_keys['s']: move_p1.z -= 1
     if move_p1.length() > 0:
         move_p1 = move_p1.normalized() * MOVE_SPEED * dt
 
@@ -164,8 +164,8 @@ def handle_player_movement():
     move_p2 = Vec3(0, 0, 0)
     if held_keys['left arrow']:  move_p2.x -= 1
     if held_keys['right arrow']: move_p2.x += 1
-    if held_keys['up arrow']:    move_p2.z -= 1
-    if held_keys['down arrow']:  move_p2.z += 1
+    if held_keys['up arrow']:    move_p2.z += 1
+    if held_keys['down arrow']:  move_p2.z -= 1
     if move_p2.length() > 0:
         move_p2 = move_p2.normalized() * MOVE_SPEED * dt
 
