@@ -88,14 +88,20 @@ BALL_R = 0.5
 ball = Entity(model='sphere', color=color.yellow, scale=BALL_R*2,
               position=(-FIELD_HALF_X*0.4, 6, 0), collider='sphere', shader=None)
 
-ball_vel = Vec3(9, 10, 0)    # Startimpuls
+ball_vel = Vec3(7, 10, 0)    # Startimpuls: langsamerer Aufschlag
 BALL_GRAV = -22
 RESTITUTION_GROUND = 0.45     # wie „gummig“ der Boden ist
 RESTITUTION_NET = 0.4
 RESTITUTION_PLAYER = 1.05     # leichter Speed‑Gain beim Schlag
+MAX_BALL_SPEED = 18.0        # maximale Ballgeschwindigkeit
 
 # Cooldown, um Mehrfachkollisionen im selben Frame zu vermeiden
 ball_hit_cooldown = 0.0
+
+# Ball-Schatten auf dem Boden (dunkle Scheibe, folgt dem Ball)
+ball_shadow = Entity(model='circle', color=color.dark_gray,
+                     scale=(0.8, 0.8, 0.05), 
+                     position=(-FIELD_HALF_X*0.4, 0.06, 0), collider=None)
 
 # ---------------------------
 # Score / Text
@@ -111,6 +117,12 @@ serve_dir = -1
 
 def clamp(v, vmin, vmax):
     return max(vmin, min(v, vmax))
+
+
+def cap_ball_speed(velocity: Vec3) -> Vec3:
+    if velocity.length() > MAX_BALL_SPEED:
+        return velocity.normalized() * MAX_BALL_SPEED
+    return velocity
 
 
 def aabb_sphere_hit(box: Entity, sph: Entity, sph_r: float) -> bool:
@@ -222,10 +234,11 @@ def reflect_from_player(player: Entity, extra_power: float):
     hit_dir = hit_dir.normalized()
 
     speed = max(12, ball_vel.length() * 0.9 + 8) + extra_power
-    ball_vel = hit_dir * speed
+    ball_vel = cap_ball_speed(hit_dir * speed)
 
     # kleine seitliche Zufälligkeit (ohne random; deterministisch via Vorzeichenwechsel)
     ball_vel.z += 0.5 * copysign(1, (player.x + player.z) or 1)
+    ball_vel = cap_ball_speed(ball_vel)
 
 
 def send_to_front_player(front_player: Entity):
@@ -238,7 +251,7 @@ def send_to_front_player(front_player: Entity):
         target_dir = target_dir.normalized()
     
     speed = 13  # schneller Pass
-    ball_vel = target_dir * speed
+    ball_vel = cap_ball_speed(target_dir * speed)
 
 
 def update():
@@ -251,7 +264,15 @@ def update():
 
     # Ball Physik
     ball_vel.y += BALL_GRAV * dt
+    ball_vel = cap_ball_speed(ball_vel)
     ball.position += ball_vel * dt
+
+    # Schatten dem Ball folgen (auf Bodenhöhe, unter dem Ball)
+    ball_shadow.x = ball.x
+    ball_shadow.z = ball.z
+    # Schatten-Größe basierend auf Ballhöhe anpassen (weiter unten = größer)
+    shadow_size = 0.8 + (4 - ball.y) * 0.15
+    ball_shadow.scale = (shadow_size, 0.05, shadow_size)
 
     # Spielfeldbegrenzungen (Z- und X-Wände, aber nicht über das Netz in X)
     # Rückwände Z
